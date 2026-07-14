@@ -1,4 +1,3 @@
-/*
 import React from 'react';
 import {
   View,
@@ -137,14 +136,3 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontFamily: 'Inter-Bold' },
   sectionSub: { fontSize: 13, fontFamily: 'Inter-Regular', marginBottom: 8 },
 });
-*/
-
-import { View, Text } from "react-native";
-
-export default function HomeScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Hello</Text>
-    </View>
-  );
-}
