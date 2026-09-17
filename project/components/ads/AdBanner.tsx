@@ -22,20 +22,27 @@ export function AdBanner({ style }: AdBannerProps) {
         unitId="ca-app-pub-2463212937075161/1456159262"
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        onAdFailedToLoad={() => setFailed(true)}
+        onAdLoaded={() => {
+		  console.log('Banner loaded');
+		}}
+		onAdFailedToLoad={(error) => {
+		  console.log('Banner failed', error);
+		  setFailed(true);
+		}}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
+	wrap: {
+	  position: 'absolute',
+	  left: 0,
+	  right: 0,
+	  bottom: 0,
+	  height: 60,
+	  backgroundColor: 'red',
+	  zIndex: 9999,
+	  elevation: 9999,
+	},
 });
