@@ -10,15 +10,17 @@ const REMINDER_MINUTE = 0;
 export const isNotificationsSupported =
   Platform.OS !== 'web' && Constants.appOwnership !== 'expo';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (isNotificationsSupported) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!isNotificationsSupported) return false;
