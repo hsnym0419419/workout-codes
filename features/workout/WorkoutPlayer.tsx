@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import {
   ArrowLeft,
@@ -32,7 +33,7 @@ import { VideoPlayer } from '@/components/atoms/molecules/VideoPlayer';
 import { VideoPlaceholder } from '@/components/VideoPlaceholder';
 import { RepCounter } from '@/components/atoms/molecules/RepCounter';
 import { Exercise } from '@/types/exercise';
-import { toImageSource } from '@/lib/media';
+import { toImageSource, getAspectRatio } from '@/lib/media';
 
 interface WorkoutPlayerProps {
   exercises: Exercise[];
@@ -158,7 +159,16 @@ function ActiveView({
   isDark: boolean;
 }) {
   const { t, tMuscle, tExerciseTitle } = useTranslation();
+  const { width: screenWidth } = useWindowDimensions();
   const isRest = timer.phase === 'rest';
+
+  const restThumbWidth = screenWidth - 40;
+  const restAspectRatio = timer.nextExercise?.thumbnail
+    ? getAspectRatio(timer.nextExercise.thumbnail)
+    : undefined;
+  const restThumbHeight = restAspectRatio
+    ? Math.round(restThumbWidth / restAspectRatio)
+    : undefined;
 
   const bgColor = isRest
     ? (isDark ? '#051825' : '#E8F4FD')
@@ -223,7 +233,10 @@ function ActiveView({
             timer.nextExercise?.thumbnail ? (
               <Image
                 source={toImageSource(timer.nextExercise.thumbnail)}
-                style={styles.restThumb}
+                style={[
+                  styles.restThumb,
+                  restThumbHeight ? { width: restThumbWidth, height: restThumbHeight } : null,
+                ]}
                 resizeMode="cover"
               />
             ) : (
@@ -391,7 +404,7 @@ const styles = StyleSheet.create({
   exTitle: { fontSize: 20, fontFamily: 'Inter-Bold', textAlign: 'center' },
   exMuscle: { fontSize: 12, fontFamily: 'Inter-Regular' },
   nextLabelPre: { fontSize: 20, fontFamily: 'Inter-Regular' },
-  restThumb: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
+  restThumb: { width: '100%', borderRadius: 16 },
   videoArea: { marginHorizontal: 20, marginBottom: 10 },
   restVisual: { height: 90, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8 },
   restText: { fontSize: 14, fontFamily: 'Inter-SemiBold' },

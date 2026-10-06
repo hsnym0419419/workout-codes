@@ -103,7 +103,7 @@ export default function HomeScreen() {
               key={exercise.id + '-' + index}
               exercise={exercise}
               index={index}
-              onPress={() => router.push('/exercise/' + exercise.id)}
+              onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}
             />
           ))}
         </View>
