@@ -8,9 +8,11 @@ import {
   Platform,
 } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { MediaSource } from '@/types/exercise';
+import { toUri, toImageSource } from '@/lib/media';
 
 interface VideoPlayerProps {
-  mediaUrl: string;
+  mediaUrl: MediaSource;
   mediaType: 'video' | 'image';
   aspectRatio?: number;
   horizontalPadding?: number;
@@ -23,12 +25,13 @@ function WebVideoPlayer({
   playerHeight,
   isWorkoutPaused,
 }: {
-  mediaUrl: string;
+  mediaUrl: MediaSource;
   playerWidth: number;
   playerHeight: number;
   isWorkoutPaused: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const src = toUri(mediaUrl);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -45,7 +48,7 @@ function WebVideoPlayer({
       {/* @ts-ignore – web-only element */}
       <video
         ref={videoRef}
-        src={mediaUrl}
+        src={src}
         autoPlay
         loop
         muted
@@ -70,13 +73,17 @@ function NativeVideoPlayer({
   playerHeight,
   isWorkoutPaused,
 }: {
-  mediaUrl: string;
+  mediaUrl: MediaSource;
   playerWidth: number;
   playerHeight: number;
   isWorkoutPaused: boolean;
 }) {
   const videoRef = useRef<Video>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const source =
+    typeof mediaUrl === 'number' || typeof mediaUrl === 'string'
+      ? mediaUrl
+      : mediaUrl.uri;
 
   const handlePlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (status.isLoaded) {
@@ -98,7 +105,7 @@ function NativeVideoPlayer({
     <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
       <Video
         ref={videoRef}
-        source={{ uri: mediaUrl }}
+        source={source}
         style={StyleSheet.absoluteFill}
         resizeMode={ResizeMode.CONTAIN}
         shouldPlay={!isWorkoutPaused}
@@ -125,6 +132,7 @@ export function VideoPlayer({
   const { width } = useWindowDimensions();
   const playerWidth = width - horizontalPadding;
   const playerHeight = Math.round(playerWidth / aspectRatio);
+  const uri = toUri(mediaUrl);
 
   if (mediaType === 'image') {
     if (Platform.OS === 'web') {
@@ -135,7 +143,7 @@ export function VideoPlayer({
             width: playerWidth,
             height: playerHeight,
             borderRadius: 16,
-            backgroundImage: `url(${mediaUrl})`,
+            backgroundImage: `url(${uri})`,
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
@@ -147,7 +155,7 @@ export function VideoPlayer({
     return (
       <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
         <Image
-          source={{ uri: mediaUrl }}
+          source={toImageSource(mediaUrl)}
           style={StyleSheet.absoluteFill}
           resizeMode="contain"
         />

@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Platform,
 } from 'react-native';
 import { Clock, ChevronRight, Zap } from 'lucide-react-native';
 import { Exercise } from '@/types/exercise';
+import { toImageSource } from '@/lib/media';
 import { Badge } from '@/components/atoms/Badge';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -44,27 +44,11 @@ export function ExerciseCard({ exercise, index, onPress }: ExerciseCardProps) {
         </Text>
       </View>
 
-      {Platform.OS === 'web' ? (
-        // @ts-ignore – web-only element
-        <div
-          style={{
-            width: 64,
-            height: 48,
-            borderRadius: 10,
-            backgroundImage: `url(${exercise.thumbnail})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundColor: '#222',
-            flexShrink: 0,
-          }}
-        />
-      ) : (
-        <Image
-          source={{ uri: exercise.thumbnail }}
-          style={styles.thumbnail}
-          resizeMode="cover"
-        />
-      )}
+      <Image
+        source={toImageSource(exercise.thumbnail)}
+        style={styles.thumbnail}
+        resizeMode="cover"
+      />
 
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>

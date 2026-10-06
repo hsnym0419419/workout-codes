@@ -32,6 +32,7 @@ import { VideoPlayer } from '@/components/atoms/molecules/VideoPlayer';
 import { VideoPlaceholder } from '@/components/VideoPlaceholder';
 import { RepCounter } from '@/components/atoms/molecules/RepCounter';
 import { Exercise } from '@/types/exercise';
+import { toImageSource } from '@/lib/media';
 
 interface WorkoutPlayerProps {
   exercises: Exercise[];
@@ -62,7 +63,11 @@ function IdleView({
       <View style={styles.idleBody}>
         {firstThumbnail ? (
           <View style={styles.idleThumbWrap}>
-            <Image source={{ uri: firstThumbnail }} style={styles.idleThumb} resizeMode="cover" />
+            <Image
+              source={toImageSource(firstThumbnail)}
+              style={styles.idleThumb}
+              resizeMode="cover"
+            />
           </View>
         ) : (
           <View style={[styles.idleThumbWrap, { backgroundColor: colors.primaryDim, alignItems: 'center', justifyContent: 'center' }]}>
@@ -217,7 +222,7 @@ function ActiveView({
           {isRest ? (
             timer.nextExercise?.thumbnail ? (
               <Image
-                source={{ uri: timer.nextExercise.thumbnail }}
+                source={toImageSource(timer.nextExercise.thumbnail)}
                 style={styles.restThumb}
                 resizeMode="cover"
               />

@@ -1,5 +1,10 @@
 export type RepType = 'timed' | 'single' | 'bilateral';
 
+export type MediaSource =
+  | string
+  | number
+  | { uri: string; width?: number; height?: number };
+
 export interface Exercise {
   id: string;
   title: string;
@@ -7,10 +12,10 @@ export interface Exercise {
   duration: number;
   rest: number;
   videoId: string;
-  thumbnail: string;
-  mediaUrl: string;
+  thumbnail: MediaSource;
+  mediaUrl: MediaSource;
   mediaType: 'video' | 'image';
-  workoutMediaUrl?: string;
+  workoutMediaUrl?: MediaSource;
   workoutMediaType?: 'video' | 'image';
   muscleGroup: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';

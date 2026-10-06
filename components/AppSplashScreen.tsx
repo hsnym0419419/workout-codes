@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, useWindowDimensions, Animated } from 'react-native';
+import { MediaSource } from '@/types/exercise';
+import { toImageSource } from '@/lib/media';
 
 interface Props {
   onFinished: () => void;
   prefsReady: boolean;
 }
 
-const LOGO_URI = 'https://hsnym0419419.github.io/workout-videos/splahScreenLogo.png';
+const LOGO: MediaSource = require('../assets/images/splahScreenLogo.png');
 const FADE_IN_MS = 600;
 const HOLD_MS = 1500;
 const FADE_OUT_MS = 500;
@@ -47,7 +49,7 @@ export function AppSplashScreen({ onFinished, prefsReady }: Props) {
     <View style={styles.container}>
       <Animated.View style={[styles.logoWrap, { opacity }]}>
         <Image
-          source={{ uri: LOGO_URI }}
+          source={toImageSource(LOGO)}
           style={{ width: logoSize, height: logoSize }}
           resizeMode="contain"
         />
