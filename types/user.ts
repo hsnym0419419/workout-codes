@@ -6,6 +6,7 @@ export interface UserPreference {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   language: Language;
+  theme: 'system' | 'light' | 'dark';
   hasSeenOnboarding: boolean;
   notificationsEnabled: boolean;
   hasAskedNotifications: boolean;

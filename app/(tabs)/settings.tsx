@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
-import { Target, Activity, ChevronRight, Info, Globe, BookOpen, Bell, FileText, Shield } from 'lucide-react-native';
+import { Target, Activity, ChevronRight, Info, Globe, BookOpen, Bell, FileText, Shield, Sun, Moon, Monitor } from 'lucide-react-native';
 import {
   isNotificationsSupported,
   openAppNotificationSettings,
@@ -31,6 +31,12 @@ const GOALS: UserPreference['goal'][] = [
 ];
 
 const LEVELS: UserPreference['level'][] = ['beginner', 'intermediate', 'advanced'];
+
+const THEMES: { value: UserPreference['theme']; icon: typeof Sun }[] = [
+  { value: 'system', icon: Monitor },
+  { value: 'light', icon: Sun },
+  { value: 'dark', icon: Moon },
+];
 
 function SectionHeader({ title, colors }: { title: string; colors: any }) {
   return (
@@ -166,6 +172,49 @@ export default function SettingsScreen() {
                 {i < LEVELS.length - 1 && <Divider colors={colors} />}
               </React.Fragment>
             ))}
+          </SettingsCard>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title={t('settings.appearance')} colors={colors} />
+          <SettingsCard colors={colors}>
+            {THEMES.map((theme, i) => {
+              const Icon = theme.icon;
+              return (
+                <React.Fragment key={theme.value}>
+                  <TouchableOpacity
+                    style={styles.row}
+                    onPress={() => update({ theme: theme.value })}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.rowIcon, { backgroundColor: `${colors.secondary}20` }]}>
+                        <Icon size={16} color={colors.secondary} strokeWidth={2} />
+                      </View>
+                      <Text style={[styles.rowLabel, { color: colors.text }]}>
+                        {t(`settings.theme.${theme.value}` as const)}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        {
+                          borderColor:
+                            preferences.theme === theme.value ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      {preferences.theme === theme.value && (
+                        <View
+                          style={[styles.radioInner, { backgroundColor: colors.primary }]}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  {i < THEMES.length - 1 && <Divider colors={colors} />}
+                </React.Fragment>
+              );
+            })}
           </SettingsCard>
         </View>
 

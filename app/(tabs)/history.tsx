@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ChartBar as BarChart2, Trophy, Flame } from 'lucide-react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useHistory } from '@/hooks/useHistory';
@@ -37,8 +38,14 @@ function EmptyState({
 
 export default function HistoryScreen() {
   const { colors } = useColorScheme();
-  const { logs, loading, refetch } = useHistory();
+  const { logs, loading, error, refetch } = useHistory();
   const { t } = useTranslation();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const completedCount = logs.filter((l) => l.completed).length;
   const totalMinutes = logs.reduce((a, l) => a + Math.round(l.duration_seconds / 60), 0);
@@ -94,6 +101,12 @@ export default function HistoryScreen() {
               color={colors.primary}
               size="large"
               style={{ marginTop: 60 }}
+            />
+          ) : error ? (
+            <EmptyState
+              colors={colors}
+              title={t('history.error.title')}
+              text={t('history.error.text')}
             />
           ) : logs.length === 0 ? (
             <EmptyState

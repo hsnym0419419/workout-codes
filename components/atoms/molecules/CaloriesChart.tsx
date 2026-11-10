@@ -1,6 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, Line, Text as SvgText, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import Svg, {
+  Path,
+  Circle,
+  Line as SvgLine,
+  Rect as SvgRect,
+  Text as SvgText,
+  Defs,
+  LinearGradient,
+  Stop,
+} from 'react-native-svg';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { WorkoutLog } from '@/types/workout';
@@ -9,35 +18,48 @@ interface CaloriesChartProps {
   logs: WorkoutLog[];
 }
 
+const HEIGHT = 180;
+const PAD_LEFT = 38;
+const PAD_RIGHT = 14;
+const PAD_TOP = 14;
+const PAD_BOTTOM = 48;
+const PLOT_H = HEIGHT - PAD_TOP - PAD_BOTTOM;
+const VISIBLE_COUNT = 7;
+const SLOT_WIDTH = 48;
+
 function estimateCalories(log: WorkoutLog): number {
   return Math.round(log.exercises_completed * 6);
 }
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return (d.getMonth() + 1) + '/' + d.getDate();
+  return d.getMonth() + 1 + '/' + d.getDate();
 }
 
-function groupByDate(logs: WorkoutLog[]): { date: string; calories: number }[] {
-  const map = new Map<string, number>();
-  for (const log of logs) {
-    const key = log.date.slice(0, 10);
-    map.set(key, (map.get(key) ?? 0) + estimateCalories(log));
-  }
-  return Array.from(map.entries())
-    .map(([date, calories]) => ({ date, calories }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+function niceCeiling(value: number): number {
+  if (value <= 0) return 50;
+  const step = value <= 100 ? 20 : 50;
+  return Math.max(step, Math.ceil(value / step) * step);
 }
 
 export function CaloriesChart({ logs }: CaloriesChartProps) {
   const { colors } = useColorScheme();
   const { t } = useTranslation();
+  const scrollRef = useRef<ScrollView>(null);
 
-  const daily = groupByDate(
-    [...logs].filter((l) => l.completed)
-  ).slice(-10);
+  const entries = [...logs]
+    .filter((l) => l.completed)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+    .map((log) => ({ id: log.id, raw: log.date, date: formatDate(log.date), calories: estimateCalories(log) }));
 
-  if (daily.length < 2) {
+  useEffect(() => {
+    if (entries.length > VISIBLE_COUNT) {
+      const id = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 0);
+      return () => clearTimeout(id);
+    }
+  }, [entries.length, entries[entries.length - 1]?.id]);
+
+  if (entries.length < 2) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -47,103 +69,142 @@ export function CaloriesChart({ logs }: CaloriesChartProps) {
     );
   }
 
+  const scrollable = entries.length > VISIBLE_COUNT;
   const W = 320;
-  const H = 160;
-  const PAD_LEFT = 36;
-  const PAD_RIGHT = 12;
-  const PAD_TOP = 12;
-  const PAD_BOTTOM = 38;
   const chartW = W - PAD_LEFT - PAD_RIGHT;
-  const chartH = H - PAD_TOP - PAD_BOTTOM;
+  const slot = scrollable ? SLOT_WIDTH : chartW / entries.length;
+  const contentW = scrollable ? PAD_LEFT + entries.length * slot + PAD_RIGHT : W;
 
-  const calories = daily.map((d) => d.calories);
-  const maxCal = Math.max(...calories, 60);
-  const minCal = Math.min(...calories, 0);
-  const range = maxCal - minCal || 1;
+  const maxCal = niceCeiling(Math.max(...entries.map((e) => e.calories)));
+  const yFor = (v: number) => PAD_TOP + PLOT_H - (v / maxCal) * (PLOT_H - 10);
+  const xFor = (i: number) => PAD_LEFT + slot * i + slot / 2;
+  const barW = Math.min(22, slot * 0.52);
+  const baseline = PAD_TOP + PLOT_H;
 
-  const points = daily.map((_, i) => ({
-    x: PAD_LEFT + (i / (daily.length - 1)) * chartW,
-    y: PAD_TOP + chartH - ((calories[i] - minCal) / range) * chartH,
-  }));
-
-  const pathD = points
+  const points = entries.map((e, i) => ({ x: xFor(i), y: yFor(e.calories) }));
+  const lineD = points
     .map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`))
     .join(' ');
-
   const fillD =
-    pathD +
-    ` L${points[points.length - 1].x},${PAD_TOP + chartH} L${points[0].x},${PAD_TOP + chartH} Z`;
+    lineD + ` L${points[points.length - 1].x},${baseline} L${points[0].x},${baseline} Z`;
 
-  const yLabels = [minCal, Math.round((minCal + maxCal) / 2), maxCal];
+  const yLabels = [0, Math.round(maxCal / 2), maxCal];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <Text style={[styles.title, { color: colors.text }]}>{t('chart.title')}</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('chart.lastDays', { n: daily.length })}</Text>
-      <Svg width={W} height={H} style={styles.svg}>
-        <Defs>
-          <LinearGradient id="calGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={colors.primary} stopOpacity={0.35} />
-            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0.03} />
-          </LinearGradient>
-        </Defs>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        {t('chart.workouts', { n: entries.length })}
+      </Text>
 
-        {yLabels.map((val, i) => {
-          const y = PAD_TOP + chartH - ((val - minCal) / range) * chartH;
-          return (
-            <React.Fragment key={i}>
-              <Line
-                x1={PAD_LEFT}
-                y1={y}
-                x2={W - PAD_RIGHT}
-                y2={y}
-                stroke={colors.border}
-                strokeWidth={0.8}
-                strokeDasharray="3,3"
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        scrollEnabled={scrollable}
+        showsHorizontalScrollIndicator={scrollable}
+        onContentSizeChange={() => {
+          if (scrollable) scrollRef.current?.scrollToEnd({ animated: false });
+        }}
+        contentContainerStyle={{ width: contentW }}
+        style={{ width: W }}
+      >
+        <Svg width={contentW} height={HEIGHT}>
+          <Defs>
+            <LinearGradient id="calGradient" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor={colors.secondary} stopOpacity={0.22} />
+              <Stop offset="100%" stopColor={colors.secondary} stopOpacity={0.02} />
+            </LinearGradient>
+          </Defs>
+
+          {yLabels.map((val, i) => {
+            const y = yFor(val);
+            return (
+              <React.Fragment key={i}>
+                <SvgLine
+                  x1={PAD_LEFT}
+                  y1={y}
+                  x2={contentW - PAD_RIGHT}
+                  y2={y}
+                  stroke={colors.border}
+                  strokeWidth={0.8}
+                  strokeDasharray="3,3"
+                />
+                <SvgText
+                  x={PAD_LEFT - 6}
+                  y={y + 3}
+                  fontSize={9}
+                  fill={colors.textTertiary ?? colors.textSecondary}
+                  textAnchor="end"
+                >
+                  {val}
+                </SvgText>
+              </React.Fragment>
+            );
+          })}
+
+          {entries.map((e, i) => {
+            const topY = yFor(e.calories);
+            const x = xFor(i);
+            return (
+              <SvgRect
+                key={e.id + '-bar'}
+                x={x - barW / 2}
+                y={topY}
+                width={barW}
+                height={baseline - topY}
+                rx={5}
+                fill={colors.primary}
+                opacity={0.85}
               />
+            );
+          })}
+
+          <Path d={fillD} fill="url(#calGradient)" />
+          <Path
+            d={lineD}
+            stroke={colors.secondary}
+            strokeWidth={2.4}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {points.map((p, i) => (
+            <Circle
+              key={entries[i].id + '-dot'}
+              cx={p.x}
+              cy={p.y}
+              r={3.6}
+              fill={colors.surface}
+              stroke={colors.secondary}
+              strokeWidth={2.4}
+            />
+          ))}
+
+          {entries.map((e, i) => (
+            <React.Fragment key={e.id + '-labels'}>
               <SvgText
-                x={PAD_LEFT - 4}
-                y={y + 4}
-                fontSize={9}
-                fill={colors.textTertiary ?? colors.textSecondary}
-                textAnchor="end"
+                x={points[i].x}
+                y={HEIGHT - 18}
+                fontSize={8.5}
+                fill={colors.textSecondary}
+                textAnchor="middle"
               >
-                {val}
+                {e.date}
+              </SvgText>
+              <SvgText
+                x={points[i].x}
+                y={HEIGHT - 6}
+                fontSize={8}
+                fill={colors.textTertiary ?? colors.textSecondary}
+                textAnchor="middle"
+              >
+                {e.calories}
               </SvgText>
             </React.Fragment>
-          );
-        })}
-
-        <Path d={fillD} fill="url(#calGradient)" />
-        <Path d={pathD} stroke={colors.primary} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-
-        {points.map((p, i) => (
-          <Circle key={i} cx={p.x} cy={p.y} r={3.5} fill={colors.primary} />
-        ))}
-
-        {daily.map((entry, i) => (
-          <React.Fragment key={i}>
-            <SvgText
-              x={points[i].x}
-              y={H - 14}
-              fontSize={8.5}
-              fill={colors.textSecondary}
-              textAnchor="middle"
-            >
-              {formatDate(entry.date)}
-            </SvgText>
-            <SvgText
-              x={points[i].x}
-              y={H - 4}
-              fontSize={8}
-              fill={colors.textTertiary ?? colors.textSecondary}
-              textAnchor="middle"
-            >
-              {entry.calories}kcal
-            </SvgText>
-          </React.Fragment>
-        ))}
-      </Svg>
+          ))}
+        </Svg>
+      </ScrollView>
     </View>
   );
 }
@@ -166,9 +227,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     alignSelf: 'flex-start',
     marginBottom: 8,
-  },
-  svg: {
-    marginTop: 4,
   },
   empty: {
     borderRadius: 16,

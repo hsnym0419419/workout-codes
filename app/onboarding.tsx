@@ -1,4 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Animated, {
+  withTiming,
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+} from 'react-native-reanimated';
 import {
   View,
   Text,
@@ -320,6 +326,21 @@ function LanguageMock({ colors, t }: { colors: ColorScheme; t: (k: TranslationKe
   );
 }
 
+function IndicatorDot({ active, colors }: { active: boolean; colors: ColorScheme }) {
+  const value = useSharedValue(active ? 1 : 0);
+
+  useEffect(() => {
+    value.value = withTiming(active ? 1 : 0, { duration: 220 });
+  }, [active, value]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: 6 + value.value * 12,
+    backgroundColor: interpolateColor(value.value, [0, 1], [colors.border, colors.primary]),
+  }));
+
+  return <Animated.View style={[styles.dot, animatedStyle]} />;
+}
+
 function Mock({ id, colors, t }: { id: MockId; colors: ColorScheme; t: (k: TranslationKey) => string }) {
   switch (id) {
     case 'welcome':  return <WelcomeMock  colors={colors} t={t} />;
@@ -364,16 +385,7 @@ export default function OnboardingScreen() {
         <View style={{ width: 64 }} />
         <View style={styles.dots}>
           {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: i === index ? colors.primary : colors.border,
-                  width: i === index ? 18 : 6,
-                },
-              ]}
-            />
+            <IndicatorDot key={i} active={i === index} colors={colors} />
           ))}
         </View>
         <TouchableOpacity onPress={finish} style={styles.skipBtn}>

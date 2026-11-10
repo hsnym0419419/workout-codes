@@ -10,6 +10,7 @@ const DEFAULT: UserPreference = {
   soundEnabled: true,
   vibrationEnabled: true,
   language: 'en',
+  theme: 'system',
   hasSeenOnboarding: false,
   notificationsEnabled: false,
   hasAskedNotifications: false,

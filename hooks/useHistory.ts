@@ -30,14 +30,22 @@ export function useHistory() {
 
   const saveLog = useCallback(
     async (log: Omit<WorkoutLog, 'id' | 'created_at'>) => {
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('workout_logs')
-        .insert([log]);
+        .insert([log])
+        .select();
 
-      if (!insertError) {
+      if (insertError) {
+        setError(insertError.message);
+        return { error: insertError };
+      }
+
+      if (data && data.length > 0) {
+        setLogs((prev) => [data[0] as WorkoutLog, ...prev]);
+      } else {
         fetchLogs();
       }
-      return { error: insertError };
+      return { error: null };
     },
     [fetchLogs]
   );
